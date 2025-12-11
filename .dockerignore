@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+.DS_Store
+.git
+.cache
+coverage
+artifacts
+cache
+cache.json
+.env
+.env.* 
+.vscode
+dist
+build
