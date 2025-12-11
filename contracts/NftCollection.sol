@@ -2,11 +2,10 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-contract NftCollection is ERC721, ERC721Burnable, Ownable {
+contract NftCollection is ERC721, Ownable {
     using Strings for uint256;
 
     uint256 public immutable maxSupply;
@@ -18,10 +17,14 @@ contract NftCollection is ERC721, ERC721Burnable, Ownable {
     // Minting pause flag (only minting is paused, transfers allowed)
     bool private _mintPaused;
 
+    // Track existence explicitly
+    mapping(uint256 => bool) private _minted;
+
     event MintPaused(address indexed admin);
     event MintUnpaused(address indexed admin);
     event BaseURIUpdated(string newBaseURI);
 
+    // Pass owner to Ownable constructor because some OZ versions expect it
     constructor(
         string memory name_,
         string memory symbol_,
@@ -32,6 +35,7 @@ contract NftCollection is ERC721, ERC721Burnable, Ownable {
         maxSupply = maxSupply_;
         _baseTokenURI = baseURI_;
         _mintPaused = false;
+        totalSupply = 0;
     }
 
     // -------------------
@@ -52,7 +56,7 @@ contract NftCollection is ERC721, ERC721Burnable, Ownable {
 
     // tokenURI: baseURI + tokenId
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+        require(_minted[tokenId], "ERC721Metadata: URI query for nonexistent token");
 
         string memory baseURI = _baseURI();
         if (bytes(baseURI).length == 0) {
@@ -80,24 +84,50 @@ contract NftCollection is ERC721, ERC721Burnable, Ownable {
         emit MintUnpaused(msg.sender);
     }
 
-    // Admin-only mint function
+    // Admin-only safe mint function
     function safeMint(address to, uint256 tokenId) external onlyOwner {
         require(!_mintPaused, "Minting is paused");
         require(to != address(0), "Cannot mint to zero address");
         require(tokenId > 0 && tokenId <= maxSupply, "TokenId out of valid range");
-        require(!_exists(tokenId), "Token already minted");
+        require(!_minted[tokenId], "Token already minted");
         require(totalSupply < maxSupply, "Max supply reached");
 
         _safeMint(to, tokenId);
+
+        // Explicitly update existence and supply (no internal overrides)
+        _minted[tokenId] = true;
         totalSupply += 1;
     }
 
     // -------------------
-    //   Burning override
+    //   Burn (explicit public function)
     // -------------------
+    // We implement our own burn function rather than inheriting ERC721Burnable,
+    // to keep explicit control over supply and existence updates and avoid OZ version issues.
+    function burn(uint256 tokenId) external {
+        address ownerAddr = ownerOf(tokenId);
 
-    function _burn(uint256 tokenId) internal override(ERC721) {
-        super._burn(tokenId);
-        totalSupply -= 1;
+        // Caller must be owner or approved or operator
+        require(
+            msg.sender == ownerAddr ||
+            getApproved(tokenId) == msg.sender ||
+            isApprovedForAll(ownerAddr, msg.sender),
+            "Not owner nor approved"
+        );
+
+        // Call internal _burn (available from ERC721)
+        _burn(tokenId);
+
+        // Update existence and totalSupply
+        if (_minted[tokenId]) {
+            _minted[tokenId] = false;
+            // totalSupply should be >= 1, but sanity-check not required because of require flow
+            totalSupply -= 1;
+        }
+    }
+
+    // Optional: expose a view for token existence
+    function exists(uint256 tokenId) external view returns (bool) {
+        return _minted[tokenId];
     }
 }
