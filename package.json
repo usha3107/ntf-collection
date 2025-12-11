@@ -17,5 +17,13 @@
   "bugs": {
     "url": "https://github.com/usha3107/ntf-collection/issues"
   },
-  "homepage": "https://github.com/usha3107/ntf-collection#readme"
+  "homepage": "https://github.com/usha3107/ntf-collection#readme",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "hardhat": "^2.27.2",
+    "hardhat-gas-reporter": "^2.3.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0"
+  }
 }
