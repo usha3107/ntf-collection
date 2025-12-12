@@ -1,13 +1,22 @@
-# Sample Hardhat Project
+# NftCollection – ERC-721 NFT Collection
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a Hardhat Ignition module that deploys that contract.
+## Overview
+This project implements an ERC-721–compatible NFT smart contract with:
+- Max supply
+- Admin-only minting
+- Pausable minting
+- Token metadata via baseURI + tokenId
+- Burning support
+- Comprehensive tests
+- Dockerized environment
 
-Try running some of the following tasks:
+## Requirements
+- Node.js (LTS)
+- npm
+- Docker
 
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat ignition deploy ./ignition/modules/Lock.js
-```
+## Local Setup
+
+1. Install dependencies:
+   ```bash
+   npm install
